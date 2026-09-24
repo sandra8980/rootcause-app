@@ -1,28 +1,33 @@
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-);
-
 export default function RootCauseApp() {
   const [step, setStep] = useState('landing');
   const [observation, setObservation] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const getSupabase = () => {
+    return createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+    );
+  };
+
   const handleStart = () => setStep('investigate');
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase.from('cases').insert([
-      { initial_symptom: observation }
-    ]);
-    setSaving(false);
-    if (error) {
-      alert('Error saving case: ' + error.message);
-    } else {
+    try {
+      const supabase = getSupabase();
+      const { error } = await supabase.from('cases').insert([
+        { initial_symptom: observation }
+      ]);
+      if (error) throw error;
       alert('Investigation saved to Supabase successfully!');
+    } catch (err) {
+      alert('Error saving case: ' + err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -68,4 +73,3 @@ export default function RootCauseApp() {
     </div>
   );
 }
-
